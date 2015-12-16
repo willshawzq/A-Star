@@ -3,17 +3,18 @@ class AStar extends React.Component {
 	    super(props);
 	    this.state = {
 			current: 84,
-			siblings: [],
+			start: 84,
+			target: 215,
+			result: [],
 			openArr: [84],
-			openObj: {84:{num: 1}},
 			closeArr: [],
-			target: 215
+			openObj: {}
 	    };
 	}
 	getMap() {
 		let map = [
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-			0,0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,3,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,1,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,
@@ -25,7 +26,7 @@ class AStar extends React.Component {
 			0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,2,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,
-			0,0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,
+			0,0,0,0,3,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -37,43 +38,75 @@ class AStar extends React.Component {
 	}
 	renderMap() {
 		let mapArr = this.getMap(),
-			siblings = this.state.siblings,
+			path = '',
+			{openArr, openObj, result} = this.state,
 			colorArr = ['white', 'green', 'red', 'gray'];
-			console.info(this.state.siblings);
 		return mapArr.map((val, i)=>{
-			if(val === 3) this.state.closeArr.push(val);
+			if(val === 3) this.state.closeArr.push(i);
+			if(result.indexOf(i) > -1) {
+				path = 'yellow';
+			}else {
+				path = '';
+			}
 			return (
-				<span key={i} data-x={i % 20} data-y={i/20} className={`star ${colorArr[val]}`}>
-					{siblings[i] ? siblings[i]['num'] : ''}
+				<span key={i} data-x={i % 20} data-y={Math.floor(i/20)} className={`star ${colorArr[val]} ${path}`}>
+					{openArr.indexOf(i) > -1 ? i : ''}
 				</span>
 			);
 		});
 	}
 	openFn() {
 		let current = this.state.openArr.shift();
-		if(current === this.state.target) return;
+		if(current === this.state.target) {
+			//console.info(current, this.state.target);
+			this.showLine();
+			return;
+		};
+		console.info(current);
+
 		this.state.closeArr.push(current);
 		this.getSiblings(current);
+		let openObj = this.state.openObj;
 		this.state.openArr.sort((s, t)=>{
-			return s.num - t.num;
+			return openObj[s]['num'] - openObj[t]['num'];
 		});
+		//console.log(openObj);
+		//console.log(this.state.openArr);
+		this.openFn();
+	}
+	showLine() {
+		let closeArr = this.state.closeArr;
+		let last = closeArr.pop();
+		this.findParent(last);
+	}
+	findParent(index) {
+		this.state.result.unshift(index);
+		let parent = this.state.openObj[index]['parent'];
+		if(parent == this.state.start){
+			this.setState({
+				result: this.state.result
+			});
+			console.log(this.state.result);
+			return;
+		}
+		this.findParent(parent);
 	}
 	f(index) {
 		return this.g(index) + this.h(index);
 	}
 	g(index) {
-		let start 	= [ 84 % 20, 84 / 20],
-			current = [ index % 20, index / 20];
+		let start 	= [ 84 % 20, Math.floor(84 / 20)],
+			current = [ index % 20, Math.floor(index / 20)];
 		let x = current[0] - start[0],
 			y = current[1] - start[1];
-		return parseInt(Math.sqrt(x*x, y*y).toFixed(1));
+		return Math.sqrt(x*x + y*y);
 	}
 	h(index) {
-		let end 	= [ 215 % 20, 215 / 20],
-			current = [ index % 20, 215 / 20];
+		let end 	= [ 215 % 20, Math.floor(215 / 20)],
+			current = [ index % 20, Math.floor(index / 20)];
 		let x = end[0] - current[0],
 			y = end[1] - current[1];
-		return parseInt(Math.sqrt(x*x, y*y).toFixed(1));
+		return Math.sqrt(x*x + y*y);
 	}
 	getSiblings(index) {
 		let siblings = [
@@ -92,18 +125,19 @@ class AStar extends React.Component {
 			let included = this.state.closeArr.indexOf(val) < 0
 							&& this.state.openArr.indexOf(val) < 0;
 			if(included) {
+				//if(val == 215) console.log(index);
 				this.state.openArr.push(val);
 				this.state.openObj[val] = {
-					num: this.f(val)
+					num: this.f(val),
+					parent: index
 				}
 			}
 		});
 	}
 	componentDidMount() {
 		this.openFn();
-		console.info(this.state.siblings);
 		this.setState({
-			siblings: this.state.siblings
+			openArr: this.state.openArr
 		});
 	}
 	render() {
