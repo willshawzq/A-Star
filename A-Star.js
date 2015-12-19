@@ -2,14 +2,14 @@ class AStar extends React.Component {
 	constructor(props) {
 	    super(props);
 	    this.state = {
-	    	gridSize: 20,
-			current: 84,
-			start: 84,
-			target: 215,
-			result: [],
-			openArr: [84],
-			closeArr: [],
-			openObj: {}
+	    	cols: props.cols || Math.floor(Math.sqrt(props.map.length)),
+	    	gridSize: props.gridSize,//网格尺寸
+			start: props.map.indexOf(1),//起点序号
+			target: props.map.indexOf(2),//目标点序号
+			result: [],//结果数组
+			openArr: [props.map.indexOf(1)],//估价排序数组
+			closeArr: [],//已排出的干扰节点
+			openObj: {}//保持估价数组中节点的估价和父节点
 	    };
 	}
 	renderMap() {
@@ -75,22 +75,25 @@ class AStar extends React.Component {
 	}
 	/*计算起点到当前节点的代价（直线距离）*/
 	g(index) {
-		let start 	= [ this.state.start % 20, Math.floor(this.state.start / 20)],
-			current = [ index % 20, Math.floor(index / 20)];
+		let cols = this.state.cols;
+		let start 	= [ this.state.start % cols, Math.floor(this.state.start / cols)],
+			current = [ index % cols, Math.floor(index / cols)];
 		let x = current[0] - start[0],
 			y = current[1] - start[1];
 		return Math.sqrt(x*x + y*y);
 	}
 	/*计算当前节点到目标节点的代价（直线距离）*/
 	h(index) {
-		let end 	= [ this.state.target % 20, Math.floor(this.state.target / 20)],
-			current = [ index % 20, Math.floor(index / 20)];
+		let cols = this.state.cols;
+		let end 	= [ this.state.target % cols, Math.floor(this.state.target / cols)],
+			current = [ index % cols, Math.floor(index / cols)];
 		let x = end[0] - current[0],
 			y = end[1] - current[1];
 		return Math.sqrt(x*x + y*y);
 	}
 	getSiblings(index) {
-		let {cols, map} = this.props,
+		let {map} = this.props,
+			cols = this.state.cols,
 			len = map.length,
 			siblings = [
 				index - (cols + 1),
@@ -122,21 +125,27 @@ class AStar extends React.Component {
 			openArr: this.state.openArr
 		});
 	}
-	resetMap() {
-
-	}
 	render() {
 		let {map, cols} = this.props,
 			len = map.length;
 		let width = Math.sqrt(len) * this.state.gridSize;
 		return (
-			<div className='AStar' style={{width: `${width}px`}}>
+			<div>
 				<button onClick={this.findWay.bind(this)}>寻路</button>
-				<button onClick={this.resetMap.bind(this)}>重置</button>
-				{this.renderMap()}
+				<div className='AStar' style={{width: `${width}px`}}>
+					{this.renderMap()}
+				</div>
 			</div>
 		);
 	}
+}
+AStar.defaultProps = {
+    gridSize: 20
+}
+AStar.propTypes = {
+     map: React.PropTypes.array.isRequired,
+     cols: React.PropTypes.number,
+     gridSize: React.PropTypes.number
 }
 let map = [
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
