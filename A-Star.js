@@ -91,6 +91,23 @@ class AStar extends React.Component {
 			y = end[1] - current[1];
 		return Math.sqrt(x*x + y*y);
 	}
+	filter(val, i) {
+	  let {cols, rows} = this.state,
+	      rules = [
+	        {x: -1, y: -1},
+	        {x:  0, y: -1},
+	        {x:  1, y: -1},
+	        {x: -1, y:  0},
+	        {x:  1, y:  0},
+	        {x: -1, y:  1},
+	        {x:  0, y:  1},
+	        {x:  1, y:  1}
+	      ],
+	      pos = [val % cols + rules[i]['x'], Math.floor(val / cols) + rules[i]['y']];
+	  return (
+	    (0 <= pos[0] <= cols) && (0 <= pos[1] <= rows)
+	  );
+	}
 	getSiblings(index) {
 		let {map} = this.props,
 			cols = this.state.cols,
@@ -104,8 +121,8 @@ class AStar extends React.Component {
 				index + (cols - 1),
 				index + cols,
 				index + (cols + 1)
-			].map((val)=>{
-				if(0 < val < len) return val;
+			].map((val, i)=>{
+				if(this.filter(val, i)) return val;
 			});
 		siblings.map((val, i)=>{
 			let included = this.state.closeArr.indexOf(val) < 0
